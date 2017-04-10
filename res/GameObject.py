@@ -1,5 +1,6 @@
 """
 This is Game Objects File
+
 """
 
 import pygame;
@@ -12,37 +13,64 @@ FPS = 0;
 rocketImagePath = "res/sprites/rocket.png";
 
 def init(w, h, fps):
+
+    global FPS,width,height;
     width = w;
     height = h;
     FPS = fps;
 
+#Converts pixels to meters.
+def toMeters(pixels):
+    rate = 12; #1 meter = [rate] pixels;
+    if(type(pixels) is list or type(pixels) is tuple):
+         return (pixels[0]/rate, pixels[1]/rate);
+    else:
+         return pixels/rate;
+
+#Converts meters to pixels.
+def toPixels(meters):
+    rate = 12; #1 meter = [rate] pixels;
+    if(type(meters) is list or type(meters) is tuple):
+         return (meters[0]*rate, meters[1]*rate);
+    else:
+         return meters*rate;
+
+
+class Planet:
+      def __init__(self, mass, pos, imgPath):
+          self.mass = mass;
+          self.imgPath = imgPath;
+
+          self.pos = pos;
+
+
 class Rocket:
     def __init__(self):
-        self.pos = [100, 100];
-        self.velocity = [0, 0];
-        self.acceleration = [0, 0];
-        self.ticksCounter = 0;
-        self.scale = 0.25;
+        self.pos = [5, 5]; #in meters.
+        self.velocity = [0, 0]; #in meters per second.
+        self.acceleration = [10, 5]; #in meters per second per second.
+        self.scale = 0.05;
 
         self.image = pygame.image.load(rocketImagePath);
 
     def render(self, screen):
+        #Scales the image so that the rocket is smaller.
         newImg = pygame.transform.scale(self.image, (int(self.image.get_width()*self.scale), int(self.image.get_height()*self.scale)));
 
-        screen.blit(newImg, self.pos);
+        #Sets new position so it is in the center of the rocket.
+        newPos = (toPixels(self.pos[0])-newImg.get_width()/2, toPixels(self.pos[1])-newImg.get_height()/2);
+        screen.blit(newImg, newPos);
 
     def update(self):
+        self.updatePosition();
 
-        self.ticksCounter += 1;
-        # Run Every Second
-        if(self.ticksCounter >= FPS):
-            self.updatePosition();
-            self.ticksCounter = 0;
-
-
+    #Updates the rockets position and velocity.
     def updatePosition(self):
-        self.velocity[0] += self.acceleration[0];
-        self.velocity[1] += self.acceleration[1];
+        seconds = 1/FPS; #This is the change in time between each update.
+        self.pos[0] += self.velocity[0]*seconds;
+        self.pos[1] += self.velocity[1]*seconds;
+        self.velocity[0] += self.acceleration[0]*seconds;
+        self.velocity[1] += self.acceleration[1]*seconds;
 
 
 class Level:
@@ -72,29 +100,42 @@ class Level:
 class Camera:
     def __init__(self, level, rocket):
         self.pos = [0, 0];
-        self.scale = 0.5;
+        self.scale = 1;
         self.level = level;
         self.rocket = rocket;
 
     def changePosition(self, pos):
-        if(self.checkPos(pos)):
-            self.pos = pos;
+        self.pos = pos;
 
     def changeScale(self, scale):
         # Makes sure scale is not too big or too small.
-        if(scale > 0 or self.level.surf.get_width()*scale>15000 or self.level.surf.get_height()*scale>15000):
+        if(scale < 0 or self.level.surf.get_width()*scale > 15000 or self.level.surf.get_height()*scale > 15000):
             self.scale = scale;
 
-    def checkPos(self, pos):
+    #Validate Position to return new position.
+    def validatePos(self, pos):
+        posX = pos[0];
+        posY = pos[1];
+
+        levelWidth = self.level.size[0];
+        levelHeight = self.level.size[1];
+
         #If position is less than 0 (out of the level).
-        if(pos[0] < 0 and pos[1] < 0):
-            return False;
-        #Else if position of the camera is showing a part out of the screen.
-        elif(pos[0]+width>self.level.width*self.scale and
-         pos[1]+height>self.level.height*self.scale):
-            return False;
-        else:
-            return True;
+        if(pos[0] < 0):
+            posX = 0;
+
+        if(pos[1] < 0):
+            posY = 0;
+
+        #If position is greater than levelwidth times levelscale (out of level).
+        if(pos[0]+width > levelWidth*self.scale):
+            posX = (levelWidth*self.scale)-width;
+
+        if(pos[1]+height > levelHeight*self.scale):
+            posY = (levelHeight*self.scale)-height;
+
+        #Return new position. (negative because it is relative to the level).
+        return (-posX, -posY);
 
     def render(self, screen):
 
@@ -110,6 +151,13 @@ class Camera:
         screen.blit(levelSurf, pygame.Rect(self.pos, (width, height)));
 
     def update(self):
-        pass; #TODO update to follow rocket.
+        rocketPos = toPixels(self.rocket.pos);
+
+        #Finds new camera position (is negative because it is relative to level).
+        cameraPos = self.validatePos( (rocketPos[0]-width/2, rocketPos[1]-height/2) );
+
+        self.changePosition(cameraPos);
+        print(self.pos);
+        print(str(rocketPos) + "\n");
 
 

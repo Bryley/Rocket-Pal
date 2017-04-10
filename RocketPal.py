@@ -53,11 +53,16 @@ while(running):
         elif(event.type == pygame.KEYDOWN):
             key = event.key;
             if(key == pygame.K_z):
-                game.camera.scale += 0.25;
+                game.camera.pos = [-1000, -1000];
                 print(game.camera.scale);
             elif(key == pygame.K_x):
                 game.camera.scale -= 0.25;
                 print(game.camera.scale);
+
+            elif(key == pygame.K_w):
+                game.camera.changePosition([0, game.camera.pos[1]+15]);
+            elif(key == pygame.K_s):
+                game.camera.changePosition([0, game.camera.pos[1]-15]);
         elif(event.type == pygame.KEYUP):
             key = event.key;
             if(key == pygame.K_z or key == pygame.K_x):
