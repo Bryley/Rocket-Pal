@@ -1,12 +1,18 @@
 import pygame;
 import sys;
+import os;
 sys.path.append("res"); #Change path to the modules folder.
 import GameObject;
 
+#This centers the game window to  the middle of the monitor.
+os.environ['SDL_VIDEO_CENTERED'] = '1';
+#This initiates pygame.
 pygame.init();
 
-width = 1000;
-height = 600;
+#Android aspect ratio is 16:10
+width = 1200;
+height = 750;
+
 FPS = 30;
 running = True;
 
@@ -20,7 +26,7 @@ clock = pygame.time.Clock();
 
 def createLevels():
     levels = [];
-    level1 = GameObject.Level("Level 1", [], [10000, 1000], [5, 0]);  #TODO need to add objects.
+    level1 = GameObject.Level("Level 1", [], [width, height], [5, 0]);  #TODO need to add objects.
     levels.append(level1);
     return levels;
 
@@ -30,8 +36,15 @@ class Game:
         self.levels = createLevels();
         self.level = self.levels[0];
         self.player = GameObject.Rocket();
+        self.planet = None; #The planet that the user places.
 
-        self.camera = GameObject.Camera(self.level, self.player);
+        self.camera = GameObject.Camera(self.level, self.player, self.planet);
+
+    def addPlanet(self, pos):
+        self.camera.planet = GameObject.EarthPlanet(pos);
+
+    def removePlanet(self):
+        self.camera.planet = None;
 
 game = Game();
 
@@ -42,32 +55,23 @@ def render():
 
 # Called to update the game.
 def update():
-    game.player.update();
     game.camera.update();
+
 
 # Game Loop
 while(running):
     for event in pygame.event.get():
         if(event.type == pygame.QUIT):
             running = False;
-        elif(event.type == pygame.KEYDOWN):
-            key = event.key;
-            if(key == pygame.K_z):
-                game.camera.pos = [-1000, -1000];
-                print(game.camera.scale);
-            elif(key == pygame.K_x):
-                game.camera.scale -= 0.25;
-                print(game.camera.scale);
-
-            elif(key == pygame.K_w):
-                game.camera.changePosition([0, game.camera.pos[1]+15]);
-            elif(key == pygame.K_s):
-                game.camera.changePosition([0, game.camera.pos[1]-15]);
-        elif(event.type == pygame.KEYUP):
-            key = event.key;
-            if(key == pygame.K_z or key == pygame.K_x):
-                #game.camera.scale = 0;
-                pass;
+        elif(event.type == pygame.MOUSEBUTTONDOWN):
+            pos = event.pos;
+            game.addPlanet(pos);
+        elif(event.type == pygame.MOUSEBUTTONUP):
+            pos = event.pos;
+            game.removePlanet();
+        elif(event.type == pygame.MOUSEMOTION):
+            pos = event.pos;
+            #TODO
 
 
     render();
