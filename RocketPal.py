@@ -15,6 +15,7 @@ height = 750;
 
 FPS = 30;
 running = True;
+mouseDown = False;
 
 GameObject.init(width, height, FPS);
 
@@ -26,7 +27,7 @@ clock = pygame.time.Clock();
 
 def createLevels():
     levels = [];
-    level1 = GameObject.Level("Level 1", [], [width, height], [5, 0]);  #TODO need to add objects.
+    level1 = GameObject.Level("Level 1", [], [width, height]);  #TODO need to add objects.
     levels.append(level1);
     return levels;
 
@@ -35,16 +36,22 @@ class Game:
     def __init__(self):
         self.levels = createLevels();
         self.level = self.levels[0];
-        self.player = GameObject.Rocket();
-        self.planet = None; #The planet that the user places.
+        self.player = GameObject.Rocket(self);
 
-        self.camera = GameObject.Camera(self.level, self.player, self.planet);
+        self.camera = GameObject.Camera(self.level, self.player);
 
     def addPlanet(self, pos):
         self.camera.planet = GameObject.EarthPlanet(pos);
 
     def removePlanet(self):
         self.camera.planet = None;
+
+    def updatePlanet(self, pos):
+        if(self.camera.planet == None):
+            self.addPlanet(pos);
+
+        self.camera.planet.pos = pos;
+
 
 game = Game();
 
@@ -64,14 +71,17 @@ while(running):
         if(event.type == pygame.QUIT):
             running = False;
         elif(event.type == pygame.MOUSEBUTTONDOWN):
+            mouseDown = True;
             pos = event.pos;
             game.addPlanet(pos);
         elif(event.type == pygame.MOUSEBUTTONUP):
+            mouseDown = False;
             pos = event.pos;
             game.removePlanet();
         elif(event.type == pygame.MOUSEMOTION):
             pos = event.pos;
-            #TODO
+            if(mouseDown):
+                game.updatePlanet(pos);
 
 
     render();
@@ -80,3 +90,8 @@ while(running):
     clock.tick(FPS);
 
 pygame.quit();
+
+"""
+NTS:
+ - Just fixed collision (sort of) using circles.
+"""
