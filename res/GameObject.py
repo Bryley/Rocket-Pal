@@ -25,7 +25,7 @@ def init(w, h, fps):
 def toMeters(pixels):
     rate = 12; #1 meter = [rate] pixels;
     if(type(pixels) is list or type(pixels) is tuple):
-         return (pixels[0]/rate, pixels[1]/rate);
+         return [pixels[0]/rate, pixels[1]/rate];
     else:
          return pixels/rate;
 
@@ -33,7 +33,7 @@ def toMeters(pixels):
 def toPixels(meters):
     rate = 12; #1 meter = [rate] pixels;
     if(type(meters) is list or type(meters) is tuple):
-         return (meters[0]*rate, meters[1]*rate);
+         return [meters[0]*rate, meters[1]*rate];
     else:
          return meters*rate;
 
@@ -51,8 +51,9 @@ class Planet:
           self.radius = self.image.get_width()/2;
 
       def render(self, screen):
-          #Scales the image so that the rocket is smaller.
-          newImg = pygame.transform.scale(self.image, (int(self.image.get_width()*self.scale), int(self.image.get_height()*self.scale)));
+          #Scales the image so that the planet is smaller.
+          newImg = pygame.transform.scale(self.image, (int(self.image.get_width()*self.scale),
+              int(self.image.get_height()*self.scale)));
 
 
           self.mask = pygame.mask.from_surface(newImg);
@@ -60,11 +61,12 @@ class Planet:
           newPos = (self.pos[0]-newImg.get_width()/2, self.pos[1]-newImg.get_height()/2);
           screen.blit(newImg, newPos);
 
+
       def update(self):
           pass;
 
       def getMiddlePos(self):
-          return (self.pos[0]-(self.image.get_width()*self.scale)/2, self.pos[1]-(self.image.get_height()*self.scale)/2);
+          return (self.pos);
 
 #Planet Types:
 class EarthPlanet:
@@ -78,7 +80,7 @@ class EarthPlanet:
 
 class Rocket:
     def __init__(self, game):
-        self.pos = [50, 25]; #in meters.
+        self.pos = [50, 25]; #in meters. (Also is coordinates of the middle of the rocket).
         self.velocity = [0, 0]; #in meters per second.
         self.acceleration = [0, 0]; #in meters per second per second.
         self.scale = 1;
@@ -91,13 +93,13 @@ class Rocket:
 
     def render(self, screen):
         #Scales the image so that the rocket is smaller.
-        newImg = pygame.transform.scale(self.image, (int(self.image.get_width()*self.scale), int(self.image.get_height()*self.scale)));
+        newImg = pygame.transform.scale(self.image, (int(self.image.get_width()*self.scale),
+            int(self.image.get_height()*self.scale)));
 
         #Sets new position so it is in the center of the rocket.
-        newPos = (int(toPixels(self.pos[0])-newImg.get_width()/2), int(toPixels(self.pos[1])-newImg.get_height()/2));
+        newPos = (int(toPixels(self.pos[0])-newImg.get_width()/2),
+                int(toPixels(self.pos[1])-newImg.get_height()/2));
         screen.blit(newImg, newPos);
-        #DEGBUG:
-        #pygame.draw.circle(screen, (255, 255, 0), (int(newPos[0]+newImg.get_width()/2), int(newPos[1]+newImg.get_width()/2)), int(self.radius));
 
 
     def update(self, planet):
@@ -113,17 +115,21 @@ class Rocket:
     def checkDeath(self, planet):
         #pos = rocket pos in pixels.
         pos = (toPixels(self.pos[0]), toPixels(self.pos[1]));
+
         #Out of screen.
-        if(pos[0] < 0 or pos[0]+self.image.get_width()*self.scale > width):
+        if(pos[0]-self.image.get_width()*self.scale/2 < 0 or pos[0]+self.image.get_width()*self.scale/2 > width):
             return True;
-        if(toPixels(self.pos[1]) < 0 or toPixels(self.pos[1])+self.image.get_height()*self.scale > height):
+        if(pos[1]-self.image.get_height()*self.scale/2 < 0 or pos[1]+self.image.get_height()*self.scale/2 > height):
             return True;
 
-        #Collision detection.
+        #Collision detection. # Done with distance between objects has to be greater than planet radius + rocket radius.
         if(planet != None):
-            distance = math.sqrt(( toPixels(self.pos[0]) - planet.planet.pos[0])**2 + ( toPixels(self.pos[1]) - planet.planet.pos[1])**2)
+            middlePos = planet.planet.getMiddlePos();
+            distance = math.sqrt(( (pos[0]) - middlePos[0] )**2 + ( (pos[1]) - middlePos[1] )**2);
+
             if(planet.planet.radius + self.radius > distance):
                 #Collision detected.
+                print("Collision");
                 return True;
 
         return False;
@@ -131,6 +137,7 @@ class Rocket:
 
     def reset(self, pos, vel):
         self.pos = pos;
+        print(self.pos)
         self.velocity = vel;
         self.acceleration = [0, 0];
 
@@ -179,7 +186,7 @@ class Rocket:
 
 
 class Level:
-    def __init__(self, name, levelObjects, size=[width, height], pos=[5, 5], vel=[3, 0]):
+    def __init__(self, name, levelObjects, size=[width, height], pos=[5, 5], vel=[0, 0]):
         self.levelObjects = levelObjects;
         self.name = name; #Name of the level.
 
@@ -206,8 +213,6 @@ class Level:
 
     def update(self):
 
-        print(self.rocketPos);
-
         for object in self.levelObjects:
             object.update(FPS);
 
@@ -227,38 +232,10 @@ class Camera:
         self.velocity = [0, 0];
         self.trackingSpeed = 100; #As percentage
 
-    def changePosition(self, pos):
-        self.pos = pos;
-
     def changeScale(self, scale):
         # Makes sure scale is not too big or too small.
         if(scale < 0 or self.level.surf.get_width()*scale > 15000 or self.level.surf.get_height()*scale > 15000):
             self.scale = scale;
-
-    #Validate Position to return new position.
-    def validatePos(self, pos):
-        posX = pos[0];
-        posY = pos[1];
-
-        levelWidth = self.level.size[0];
-        levelHeight = self.level.size[1];
-
-        #If position is less than 0 (out of the level).
-        if(pos[0] < 0):
-            posX = 0;
-
-        if(pos[1] < 0):
-            posY = 0;
-
-        #If position is greater than levelwidth times levelscale (out of level).
-        if(pos[0]+width > levelWidth*self.scale):
-            posX = (levelWidth*self.scale)-width;
-
-        if(pos[1]+height > levelHeight*self.scale):
-            posY = (levelHeight*self.scale)-height;
-
-        #Return new position. (negative because it is relative to the level).
-        return (-posX, -posY);
 
     def render(self, screen):
 
@@ -272,44 +249,18 @@ class Camera:
 
         self.rocket.render(self.level.surf);
         #Scale level.
-        levelSurf = pygame.transform.smoothscale(self.level.surf, (int(self.level.surf.get_width()*self.scale),
+        levelSurf = pygame.transform.smoothscale(self.level.surf,
+                (int(self.level.surf.get_width()*self.scale),
                   int(self.level.surf.get_height()*self.scale)));
-        #Screen surface.
-        screen.blit(levelSurf, pygame.Rect(self.pos, (width, height)));
+
+        #Screen surface. # CHANGED pos to 0, 0 after desiding class is obsolite.
+        screen.blit(levelSurf, pygame.Rect((0, 0), (width, height)));
 
     def update(self):
         self.rocket.update(self.planet);
         self.level.update();
 
-        #If the placed planet exists then follow the planet. Otherwise follow the rocket.
-        if(self.planet == None):
-            rocketPos = toPixels(self.rocket.pos);
-            #Finds new camera position (is negative because it is relative to level).
-            #cameraPos = self.validatePos( (rocketPos[0]-width/2, rocketPos[1]-height/2) );
-            #self.changePosition(cameraPos);
-            self.trackObject(rocketPos);
-
-        else:
-            self.trackObject(self.planet.planet.getMiddlePos());
-
-        #Updates Velocity of the camera to track the object.
-        self.updateVelocity();
-
-    def updateVelocity(self):
-        seconds = 1/FPS; #This is the change in time between each update.
-        newPos = [-(self.pos[0]+self.velocity[0]*seconds), -(self.pos[1]+self.velocity[1]*seconds)];
-        self.changePosition(self.validatePos(newPos));
-
     def reset(self):
         self.planet = None;
         self.level.reset(self);
-
-
-    def trackObject(self, position):
-        middlePos = [width/2, height/2];
-
-        xDis = middlePos[0]-position[0];
-        yDis = middlePos[1]-position[1];
-
-        self.velocity = [xDis*(self.trackingSpeed/100), yDis*(self.trackingSpeed/100)];
 
