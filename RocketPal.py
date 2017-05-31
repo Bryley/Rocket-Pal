@@ -2,7 +2,8 @@ import pygame;
 import sys;
 import os;
 sys.path.append("res"); #Change path to the modules folder.
-import GameObject;
+from modules import GameObject;
+from modules import GUI;
 
 #This centers the game window to  the middle of the monitor.
 os.environ['SDL_VIDEO_CENTERED'] = '1';
@@ -18,6 +19,7 @@ running = True;
 mouseDown = False;
 
 GameObject.init(width, height, FPS);
+GUI.init(width, height, FPS);
 
 screen = pygame.display.set_mode((width, height));
 
@@ -37,8 +39,15 @@ class Game:
         self.levels = createLevels();
         self.level = self.levels[0];
         self.player = GameObject.Rocket(self);
+        self.hud = GUI.HUD(self);
+
+        self.score = 0;
 
         self.camera = GameObject.Camera(self.level, self.player);
+
+    def render(self):
+        self.camera.render(screen);
+        self.hud.render(screen);
 
     def addPlanet(self, pos):
         self.camera.planet = GameObject.EarthPlanet(pos);
@@ -46,11 +55,21 @@ class Game:
     def removePlanet(self):
         self.camera.planet = None;
 
+
+    def addScore(self, score=1):
+        self.camera.level.star.setNewPos();
+        self.score += score;
+
     def updatePlanet(self, pos):
         if(self.camera.planet == None):
             self.addPlanet(pos);
 
         self.camera.planet.pos = pos;
+
+    def reset(self):
+        self.camera.reset();
+        self.score = 0;
+        #TODO add saving of highscore and stuff.
 
 
 game = Game();
@@ -58,7 +77,7 @@ game = Game();
 #Called to render the game.
 def render():
     screen.fill((255,255,255));
-    game.camera.render(screen);
+    game.render();
 
 # Called to update the game.
 def update():
@@ -84,6 +103,7 @@ while(running):
                 game.updatePlanet(pos);
 
 
+
     render();
     update();
     pygame.display.update(); #Update display.
@@ -91,7 +111,3 @@ while(running):
 
 pygame.quit();
 
-"""
-NTS:
- - Just fixed collision (sort of) using circles.
-"""

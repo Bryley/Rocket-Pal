@@ -6,6 +6,7 @@ This is Game Objects File
 import pygame;
 import os;
 import math;
+import random;
 
 width = 0;
 height = 0;
@@ -37,44 +38,74 @@ def toPixels(meters):
     else:
          return meters*rate;
 
+class Star:
+    def __init__(self):
+
+        self.scale = 1;
+
+        image = pygame.image.load("res/sprites/star.png");
+
+        self.image = pygame.transform.scale(image, (int(image.get_width()*self.scale),
+            int(image.get_height()*self.scale)));
+
+        self.radius = self.image.get_width()/2;
+
+        self.pos = self.generateRandomPos();
+
+    def render(self, screen):
+        #Sets pos to top left.
+        newPos = (self.pos[0]-self.image.get_width()/2, self.pos[1]-self.image.get_height()/2);
+
+        screen.blit(self.image, newPos);
+
+    def setNewPos(self):
+        self.pos = self.generateRandomPos();
+
+    def generateRandomPos(self):
+        minX = self.radius;
+        maxX = width-self.radius;
+
+        minY = self.radius;
+        maxY = height-self.radius;
+
+        xPos = random.randint(minX, maxX);
+        yPos = random.randint(minY, maxY);
+
+        return [xPos, yPos];
 
 class Planet:
-      def __init__(self, mass, pos, imgPath):
-          self.mass = mass;
-          self.imgPath = imgPath;
-          self.scale = 1;
+    def __init__(self, pos, imgPath):
+        self.imgPath = imgPath;
+        self.scale = 1;
+        
+        self.pos = pos;
 
-          self.pos = pos;
+        image = pygame.image.load(self.imgPath);
 
-          self.image = pygame.image.load(self.imgPath);
-          self.mask = pygame.mask.from_surface(self.image);
-          self.radius = self.image.get_width()/2;
+        self.image = pygame.transform.scale(image, (int(image.get_width()*self.scale),
+            int(image.get_height()*self.scale)));
+        self.radius = self.image.get_width()/2;
 
-      def render(self, screen):
-          #Scales the image so that the planet is smaller.
-          newImg = pygame.transform.scale(self.image, (int(self.image.get_width()*self.scale),
-              int(self.image.get_height()*self.scale)));
+    def render(self, screen):
+        #Sets position to top left.
+        newPos = (self.pos[0]-self.image.get_width()/2, self.pos[1]-self.image.get_height()/2);
 
-
-          self.mask = pygame.mask.from_surface(newImg);
-          #Sets position to center of planet.
-          newPos = (self.pos[0]-newImg.get_width()/2, self.pos[1]-newImg.get_height()/2);
-          screen.blit(newImg, newPos);
+        screen.blit(self.image, newPos);
 
 
-      def update(self):
-          pass;
+    def update(self):
+        pass;
 
-      def getMiddlePos(self):
-          return (self.pos);
+    def getMiddlePos(self):
+        return (self.pos);
 
 #Planet Types:
 class EarthPlanet:
-      def __init__(self, pos):
-          self.planet = Planet(1*10**17, pos, "res/sprites/earth.png");
+    def __init__(self, pos):
+        self.planet = Planet(pos, "res/sprites/earth.png");
 
-      def render(self, screen):
-          self.planet.render(screen);
+    def render(self, screen):
+        self.planet.render(screen);
 
 #TODO add obsticle planets.
 
@@ -88,29 +119,44 @@ class Rocket:
 
         self.game = game;
 
-        self.image = pygame.image.load(rocketImagePath);
-        self.mask = pygame.mask.from_surface(self.image);
+        image = pygame.image.load(rocketImagePath);
+
+        self.image = pygame.transform.scale(image, (int(image.get_width()*self.scale),
+            int(image.get_height()*self.scale)));
 
     def render(self, screen):
-        #Scales the image so that the rocket is smaller.
-        newImg = pygame.transform.scale(self.image, (int(self.image.get_width()*self.scale),
-            int(self.image.get_height()*self.scale)));
-
         #Sets new position so it is in the center of the rocket.
-        newPos = (int(toPixels(self.pos[0])-newImg.get_width()/2),
-                int(toPixels(self.pos[1])-newImg.get_height()/2));
-        screen.blit(newImg, newPos);
+        newPos = (int(toPixels(self.pos[0])-self.image.get_width()/2),
+                int(toPixels(self.pos[1])-self.image.get_height()/2));
+
+        screen.blit(self.image, newPos);
 
 
-    def update(self, planet):
+    def update(self, planet, star):
         if(planet != None):
             self.calculateAcceleration(planet.planet);
         else:
              self.acceleration = [0, 0];
+
         self.updatePosition();
 
         if(self.checkDeath(planet)):
-            self.game.camera.reset();
+            self.game.reset();
+
+        if(self.checkStarCollision(star)):
+            self.game.addScore();
+
+
+    def checkStarCollision(self, star):
+        pos = toPixels(self.pos);
+
+        distance = math.sqrt((star.pos[0]-pos[0])**2 + (star.pos[1]-pos[1])**2 );
+        radiusSum = self.radius+star.radius;
+
+        if(distance < radiusSum):
+            return True;
+        else:
+            return False;
 
     def checkDeath(self, planet):
         #pos = rocket pos in pixels.
@@ -129,7 +175,6 @@ class Rocket:
 
             if(planet.planet.radius + self.radius > distance):
                 #Collision detected.
-                print("Collision");
                 return True;
 
         return False;
@@ -137,7 +182,6 @@ class Rocket:
 
     def reset(self, pos, vel):
         self.pos = pos;
-        print(self.pos)
         self.velocity = vel;
         self.acceleration = [0, 0];
 
@@ -146,10 +190,11 @@ class Rocket:
         x = toMeters(planet.pos[0])-self.pos[0];
         y = toMeters(planet.pos[1])-self.pos[1];
 
-        G = 6.67408 * 10**-14; #Gravitational Constant.
+        G = 6670; #Gravitational Constant. (Should be 6.67x10^-14 but has been changed to 6.67x10^3 so planets mass (10^17 kg) is included in equation to reduce lag.)
 
         #This is the hypotenuse of the triangle.
-        a = G*planet.mass/(x**2+y**2);
+        #This is also the acceleration due to gravity equations used in physics. (G has planets mass included in formula)
+        a = G/(x**2+y**2);
 
         #Angle is the angle of rocket relative to center of planet.
         angle = abs(math.atan(y/x));
@@ -194,6 +239,8 @@ class Level:
         #The surface of the object.
         self.surf = pygame.Surface(size);
 
+        self.star = Star();
+
         #For reset:
         self.constantObjects = levelObjects;
         self.rocketPos = pos;
@@ -208,6 +255,8 @@ class Level:
         for object in self.levelObjects:
             object.render(self.surf);
 
+        self.star.render(self.surf);
+
         screen.blit(self.surf, (0, 0)); #Add to screen.
 
 
@@ -219,6 +268,7 @@ class Level:
     def reset(self, camera):
         self.levelObjects = self.constantObjects;
         camera.rocket.reset(list(self.rocketPos), list(self.rocketVel));
+        self.star.setNewPos();
 
 #Some functions within class are not needed and are obsolete.
 class Camera:
@@ -257,7 +307,7 @@ class Camera:
         screen.blit(levelSurf, pygame.Rect((0, 0), (width, height)));
 
     def update(self):
-        self.rocket.update(self.planet);
+        self.rocket.update(self.planet, self.level.star);
         self.level.update();
 
     def reset(self):
