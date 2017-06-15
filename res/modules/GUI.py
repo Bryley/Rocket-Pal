@@ -33,39 +33,57 @@ class HighscoresPanel:
         self.size = (width-40, height-40);
 
         self.game = game;
-        self.title = Label("Leaderboard", (width/2, 100), 50, self, True);
+        self.title = Label("Leaderboard", (100, 50), 50, self);
+        
+        self.searchLabel = Label("Search:", (width-450, 65), 30, self, True);
+        self.searchBar = TextBox.TextBox(pygame.Rect((width-450, 100), (300, 60)));
 
         self.refreshScores();
 
-        self.playBut = PlayButton(self, game, (150, 550), (250, 60));
-        self.menuBut = MenuButton(self, game, (800, 550), (250, 60));
+        self.playBut = PlayButton(self, game, (150, 600), (250, 60));
+        self.menuBut = MenuButton(self, game, (800, 600), (250, 60));
 
-        img = pygame.image.load("res/sprites/UI/panel.png");
+        self.img = pygame.image.load("res/sprites/UI/panel.png");
 
-        self.surf = pygame.transform.scale(img, self.size);
+        self.surf = pygame.transform.scale(self.img, self.size);
+
+
+    def update(self):
+        self.searchBar.update();
+        self.refreshScores();
 
 
     def refreshScores(self):
         self.scoreLabels = [];
         count = 0;
-        for score in self.game.getTopScores():
+        text = self.searchBar.text;
+
+        if(text == ""):
+            text = None;
+
+        for score in self.game.getTopScores(text):
             count += 1;
-            lbl = Label(str(count) + ": " + score.name + " - " + str(score.score), (width/2, (count+1)*100), 25, self, True);
+            lbl = Label(str(count) + ": " + score.name + "    :    " + str(score.score), (100, (count+1)*85), 25, self);
             self.scoreLabels.append(lbl);
 
 
     def render(self, screen):
+
+        self.surf = pygame.transform.scale(self.img, self.size);
         
         pPos = [(width-self.size[0])/2, (height-self.size[1])/2];
-        screen.blit(self.surf, pPos);
 
         self.title.render();
+        self.searchLabel.render();
+        self.searchBar.render(self.surf);
 
         self.playBut.iButton.render();
         self.menuBut.iButton.render();
 
         for score in self.scoreLabels:
-            score.render();
+            score.render(self.surf);
+
+        screen.blit(self.surf, pPos);
 
 
     def handleClick(self, pos):
@@ -73,6 +91,8 @@ class HighscoresPanel:
             self.playBut.action();
         elif(self.menuBut.iButton.isInside(self.translatePos(pos))):
             self.menuBut.action();
+
+        self.searchBar.handleClick(self.translatePos(pos));
 
 
 
@@ -155,14 +175,19 @@ class SetHighscorePanel:
         self.size = (width-40, height-40);
         self.game = game;
 
+
+        self.img = pygame.image.load("res/sprites/UI/panel.png");
+
+        self.surf = pygame.transform.scale(self.img, self.size);
+
+
         self.setupButtons();
-
-        img = pygame.image.load("res/sprites/UI/panel.png"); #TODO add cool background.
-        self.surf = pygame.transform.scale(img, self.size);
-
 
 
     def setupButtons(self):
+
+        self.surf = pygame.transform.scale(self.img, self.size);
+
         self.buttons = [];
 
         self.title = Label("You set a new highscore!", (width/2, 150), 50, self, True);
@@ -172,12 +197,16 @@ class SetHighscorePanel:
 
         done = DoneButton(self);
 
+        reset = ResetButton(self, self.game);
+
         self.buttons.append(done);
+        self.buttons.append(reset);
+
 
     def finish(self):
         self.game.addNewScore(self.textbox.text);
-        self.game.state = 0;
-        TextBox.activeBox = None; # Disable TextBox.
+        self.game.goToMainMenu();
+
 
     def render(self, screen):
         
@@ -339,7 +368,7 @@ class PlayButton:
         self.game = game;
 
     def action(self):
-        self.game.startGame();
+        self.game.reset();
 
 
 class DoneButton:
@@ -363,9 +392,6 @@ class MenuButton:
         self.game.goToMainMenu();
 
 
-
-
-
 class LeaderboardButton:
     def __init__(self, panel, game, pos, dim=(400, 60)):
         # i stands for inside.
@@ -374,6 +400,16 @@ class LeaderboardButton:
 
     def action(self):
         self.game.showLeaderboards();
+
+
+class ResetButton:
+    def __init__(self, panel, game):
+        # i stands for inside.
+        self.iButton = Button("Retry", (width/2-250, 600), panel, (500, 65));
+        self.game = game;
+
+    def action(self):
+        self.game.reset();
 
 
 

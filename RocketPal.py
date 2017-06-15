@@ -39,6 +39,7 @@ class Game:
     def __init__(self):
         
         self.score = 0;
+        self.highscores = [];
 
         self.levels = createLevels();
         self.level = self.levels[0];
@@ -48,13 +49,19 @@ class Game:
         self.setHighscorePanel = GUI.SetHighscorePanel(self);
         self.leaderBoardPanel = GUI.HighscoresPanel(self);
 
-        self.highscores = [];
+        self.camera = GameObject.Camera(self.level, self.player);
 
+        #DEBUG
+        self.addNewScore("YEH OKAY");
+        self.score = 50;
+        self.addNewScore("What ever");
+        self.score = 10000;
+        self.addNewScore("Not bad!");
+        
         
         # 0 = Main Menu, 1 = In-Game, 2 = Highscore, 3 = Set Highscore.
         self.state = 0;
 
-        self.camera = GameObject.Camera(self.level, self.player);
 
 
     def render(self):
@@ -76,14 +83,25 @@ class Game:
 
     def goToMainMenu(self):
         self.state = 0;
+        TextBox.activeBox = None; # Disable TextBox.
+
 
     def showLeaderboards(self):
         self.state = 2;
+        TextBox.activeBox = None; # Disable TextBox.
+
+
+    def goToSetHighscorePanel(self):
+        self.state = 3;
+        self.setHighscorePanel.setupButtons();
+        TextBox.activeBox = None; # Disables TextBox.
+
 
     def handleMouseDown(self, pos):
         if(self.state == 1):
             self.addPlanet(pos);
        
+
     def handleMouseUp(self, pos):
         if(self.state == 1):
             self.removePlanet();
@@ -98,7 +116,19 @@ class Game:
 
 
     def getTopScores(self, params=""):
-        return [Highscore("p1", 5),Highscore("p2", 1),Highscore("p3", 7), Highscore("p4", 206), Highscore("p5", -15)]; # DEBUG
+        newList = [];
+        
+        #Checks for partial match.
+        if(params != "" and params != None):
+            for score in self.highscores:
+                if(score.name.lower().startswith(params.lower())):
+                    newList.append(score);
+
+        else:
+            newList = self.highscores;
+
+           #Return the last 5 elements of the list (Top 5 as the list is ordered from lowest to highest).
+        return newList[::-1][:5];
 
 
     def handleMouseHover(self, pos):
@@ -127,8 +157,20 @@ class Game:
 
     def addNewScore(self, name):
         # Find correct spot in highscores list as it is ordered. (Insertion sort).
-        #TODO.
-        self.highscores.append(Highscore(name, self.score));
+        hs = Highscore(name, self.score);
+
+        added = False;
+        count = 0;
+        for score in self.highscores:
+            if(score.score > self.score):
+                self.highscores.insert(count, hs);
+                added = True;
+                break;
+
+            count += 1;
+
+        if(added == False):
+            self.highscores.append(hs);
 
 
     def updatePlanet(self, pos):
@@ -140,12 +182,13 @@ class Game:
 
     def reset(self):
         self.camera.reset();
-        self.score = 0;
+        self.startGame();
         #TODO add saving of highscore and stuff.
 
 
     def startGame(self):
         self.state = 1;
+        self.score = 0;
 
 
     def update(self):
@@ -154,6 +197,9 @@ class Game:
 
         elif(self.state == 0):
             pass;
+
+        elif(self.state == 2):
+            self.leaderBoardPanel.update();
 
         elif(self.state == 3):
             self.setHighscorePanel.update();

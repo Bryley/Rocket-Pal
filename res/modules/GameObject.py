@@ -141,7 +141,7 @@ class Rocket:
         self.updatePosition();
 
         if(self.checkDeath(planet)):
-            self.game.reset();
+            self.game.goToSetHighscorePanel();
 
         if(self.checkStarCollision(star)):
             self.game.addScore();
