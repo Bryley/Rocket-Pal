@@ -1,5 +1,5 @@
 """
-This is the GUI file in charge of GUIs
+This is the GUI file in charge of GUIs components.
 """
 
 import pygame;
@@ -8,12 +8,15 @@ import sys;
 sys.path.append("res"); #Change path to the modules folder.
 from modules import TextBox;
 
+#Constants.
 width = 0;
 height = 0;
 FPS = 0;
 
+#Initialise the font.
 pygame.font.init();
 
+#Sets used fonts.
 smallFont = pygame.font.Font("res/other_assets/kenvector_future.ttf", 10)
 mediumFont = pygame.font.Font("res/other_assets/kenvector_future.ttf", 30);
 fontColor = (0, 0, 0);
@@ -21,6 +24,7 @@ fontColor = (0, 0, 0);
 # List of buttons in-game so I can check for mouse inputs for all.
 buttons = [];
 
+#Init function used for setting of constant values.
 def init(w, h, fps):
     global FPS,width,height;
     width = w;
@@ -28,51 +32,56 @@ def init(w, h, fps):
     FPS = fps;
 
 
+#Class that stores panel for highscores.
 class HighscoresPanel:
     def __init__(self, game):
-        self.size = (width-40, height-40);
+        self.size = (width-40, height-40); #The size of the panel
 
-        self.game = game;
-        self.title = Label("Leaderboard", (100, 50), 50, self);
+        self.game = game; #Instance of game object.
+        self.title = Label("Leaderboard", (100, 50), 50, self); #Title Label.
         
         self.searchLabel = Label("Search:", (width-450, 65), 30, self, True);
-        self.searchBar = TextBox.TextBox(pygame.Rect((width-450, 100), (300, 60)));
+        self.searchBar = TextBox.TextBox(pygame.Rect((width-450, 100), (300, 60))); #Text box for earching.
 
-        self.refreshScores();
+        self.refreshScores(); #Refreshs all the scores.
 
-        self.playBut = PlayButton(self, game, (150, 600), (250, 60));
-        self.menuBut = MenuButton(self, game, (800, 600), (250, 60));
+        self.playBut = PlayButton(self, game, (150, 600), (250, 60)); #Play button.
+        self.menuBut = MenuButton(self, game, (800, 600), (250, 60)); #Menu button.
 
-        self.img = pygame.image.load("res/sprites/UI/panel.png");
+        self.img = pygame.image.load("res/sprites/UI/panel.png"); #Background image of panel.
 
-        self.surf = pygame.transform.scale(self.img, self.size);
+        self.surf = pygame.transform.scale(self.img, self.size); #The scaled image of the panel.
 
 
+    #Called to update Highscore.
     def update(self):
         self.searchBar.update();
-        self.refreshScores();
+        self.refreshScores(); #Refreshes scores every game tick.
 
 
+    #Refreshes the scores shown on the leaderboard.
     def refreshScores(self):
-        self.scoreLabels = [];
-        count = 0;
-        text = self.searchBar.text;
+        self.scoreLabels = []; #Stores the labels of the scores.
+        count = 0; #Counts through loop.
+        text = self.searchBar.text; #The text in the search bar.
 
-        if(text == ""):
+        if(text == ""): #When the text in the textbox is empty.
             text = None;
 
-        for score in self.game.getTopScores(text):
+        for score in self.game.getTopScores(text): #For every score in top scores.
             count += 1;
-            lbl = Label(str(count) + ": " + score.name + "    :    " + str(score.score), (100, (count+1)*85), 25, self);
-            self.scoreLabels.append(lbl);
+            lbl = Label(str(count) + ": " + score.name + "    :    " + str(score.score), (100, (count+1)*85), 25, self); #Set label.
+            self.scoreLabels.append(lbl); #Add label to score labels.
 
 
+    #Called every tick to render image.
     def render(self, screen):
 
-        self.surf = pygame.transform.scale(self.img, self.size);
+        self.surf = pygame.transform.scale(self.img, self.size); #Scale surface object.
         
-        pPos = [(width-self.size[0])/2, (height-self.size[1])/2];
+        pPos = [(width-self.size[0])/2, (height-self.size[1])/2]; #Stands for panel position (top left).
 
+        #Render all objects.
         self.title.render();
         self.searchLabel.render();
         self.searchBar.render(self.surf);
@@ -83,19 +92,21 @@ class HighscoresPanel:
         for score in self.scoreLabels:
             score.render(self.surf);
 
-        screen.blit(self.surf, pPos);
+        screen.blit(self.surf, pPos); #Add to screen.
 
 
+    #Handle click of objects.
     def handleClick(self, pos):
+        #For the buttons.
         if(self.playBut.iButton.isInside(self.translatePos(pos))):
             self.playBut.action();
         elif(self.menuBut.iButton.isInside(self.translatePos(pos))):
             self.menuBut.action();
 
-        self.searchBar.handleClick(self.translatePos(pos));
+        self.searchBar.handleClick(self.translatePos(pos)); #Handle click for text box.
 
 
-
+    #Handle hover of objects.
     def handleHover(self, pos):
         if(self.playBut.iButton.isInside(self.translatePos(pos))):
             self.playBut.iButton.hover = True;
@@ -116,8 +127,7 @@ class HighscoresPanel:
         return newPos;
 
 
-
-
+#The panel of the main menu.
 class MainMenuPanel:
     def __init__(self, game):
         self.size = (width-40, height-40);
@@ -125,36 +135,39 @@ class MainMenuPanel:
 
         self.setupButtons();
 
-        img = pygame.image.load("res/sprites/UI/panel.png"); #TODO add cool background.
-        self.surf = pygame.transform.scale(img, self.size);
+        #Create empty Surface.
+        self.surf = pygame.Surface(self.size, pygame.SRCALPHA, 32);
+        self.surf = self.surf.convert_alpha();
 
 
-
+    #Setup all the buttons.
     def setupButtons(self):
         self.buttons = [];
 
-        playBut = PlayButton(self, self.game, (100, 100));
-        leaderButton = LeaderboardButton(self, self.game, (100, 300));
+        playBut = PlayButton(self, self.game, (700, 300));
+        leaderButton = LeaderboardButton(self, self.game, (700, 500));
 
         self.buttons.append(playBut);
         self.buttons.append(leaderButton);
 
 
+    #Render all the components.
     def render(self, screen):
         
-        pPos = [(width-self.size[0])/2, (height-self.size[1])/2];
+        pPos = [(width-self.size[0])/2, (height-self.size[1])/2]; #Panel position.
         screen.blit(self.surf, pPos);
 
         for button in self.buttons:
             button.iButton.render();
 
 
+    #Handle clicking of the components.
     def handleClick(self, pos):
         for button in self.buttons:
             if(button.iButton.isInside(self.translatePos(pos))):
-                button.action();
+                button.action(); #Calls the action of the button.
 
-
+    #Handle hover of the ccomponents.
     def handleHover(self, pos):
         for button in self.buttons:
             if(button.iButton.isInside(self.translatePos(pos))):
@@ -170,6 +183,8 @@ class MainMenuPanel:
 
         return newPos;
 
+
+#Add new highscore panel.
 class SetHighscorePanel:
     def __init__(self, game):
         self.size = (width-40, height-40);
@@ -184,6 +199,7 @@ class SetHighscorePanel:
         self.setupButtons();
 
 
+    #Setup of buttons.
     def setupButtons(self):
 
         self.surf = pygame.transform.scale(self.img, self.size);
@@ -203,27 +219,33 @@ class SetHighscorePanel:
         self.buttons.append(reset);
 
 
+    #Called when "Done" button is clicked.
     def finish(self):
         self.game.addNewScore(self.textbox.text);
         self.game.goToMainMenu();
 
 
+    #Renders components.
     def render(self, screen):
         
-        pPos = [(width-self.size[0])/2, (height-self.size[1])/2];
+        pPos = [(width-self.size[0])/2, (height-self.size[1])/2]; #Panel position.
         screen.blit(self.surf, pPos);
 
         self.title.render();
         self.desc.render();
 
-        self.textbox.render(self.surf);
+        self.textbox.render(self.surf); #Render textbox.
 
         for button in self.buttons:
             button.iButton.render();
 
+
+    #Called every game tick.
     def update(self):
         self.textbox.update();
 
+
+    #Handle click of components.
     def handleClick(self, pos):
 
         self.textbox.handleClick(self.translatePos(pos));
@@ -233,6 +255,7 @@ class SetHighscorePanel:
                 button.action();
 
 
+    #Handles hover of components.
     def handleHover(self, pos):
         for button in self.buttons:
             if(button.iButton.isInside(self.translatePos(pos))):
@@ -249,6 +272,7 @@ class SetHighscorePanel:
         return newPos;
 
 
+#The HUD object, stands for Heads Up Display. Designed to show score.
 class HUD:
     def __init__(self, game):
         # Create transparent surface the size of the screen.
@@ -257,12 +281,15 @@ class HUD:
 
         self.game = game;
 
+
+    #Renders score.
     def render(self, screen):
         scoreSurf = mediumFont.render("SCORE: " + str(self.game.score), True, (255, 255, 255));
 
         screen.blit(scoreSurf, (5, 5));
 
 
+#Label GUI component class.
 class Label:
     def __init__(self, text, pos, textSize=15, panel=None, centered=False):
         self.pos = pos;
@@ -270,11 +297,12 @@ class Label:
         self.size = textSize;
         self.panel = panel;
 
-        self.centered = centered;
+        self.centered = centered; #Text is centered on pos.
 
-        self.font = pygame.font.Font("res/other_assets/kenvector_future.ttf", self.size);
+        self.font = pygame.font.Font("res/other_assets/kenvector_future.ttf", self.size); #Font object.
 
 
+    #Renders the text.
     def render(self, screen=None):
 
         if(screen == None):
@@ -284,7 +312,7 @@ class Label:
 
         pos = None;
 
-        if(self.centered):
+        if(self.centered): #If text is centered.
             pos = [self.pos[0]-self.image.get_width()/2, self.pos[1]-self.image.get_height()/2];
 
         else:
@@ -292,6 +320,8 @@ class Label:
         
         screen.blit(self.image, pos);
 
+
+#Button GUI component class.
 class Button:
     def __init__(self, text, pos, panel=None, dim=(150, 45)):
         self.pos = pos;
@@ -306,6 +336,7 @@ class Button:
         buttons.append(self);
 
 
+    #Called every tick for rendering object.
     def render(self, screen=None):
         if(screen == None):
             screen = self.panel.surf;
@@ -315,6 +346,7 @@ class Button:
         self.renderText(screen);
         
 
+    #Renders Text on button.
     def renderText(self, screen):
         surf = mediumFont.render(self.text, True, fontColor);
         pos = (self.getMiddlePos()[0]-surf.get_width()/2,
@@ -322,11 +354,11 @@ class Button:
 
         screen.blit(surf, pos);
 
-
+    #Returns the middle position of the button. 
     def getMiddlePos(self):
         return (self.pos[0]+self.image.get_width()/2, self.pos[1]+self.image.get_height()/2);
 
-
+    #Checks if the position given is inside the button.
     def isInside(self, pos):
         corner = [self.pos[0]+self.dim[0], self.pos[1]+self.dim[1]];
 
@@ -334,7 +366,7 @@ class Button:
             if(pos[0]<corner[0] and pos[1]<corner[1]):
                 return True;
 
-
+    #Updates the image.
     def updateImage(self):
         if(not self.disabled):
             if(self.hover):
@@ -360,54 +392,60 @@ class Button:
 
 
 
-
+#Class for the play button.
 class PlayButton:
-    def __init__(self, panel, game, pos, dim=(400, 60)):
+    def __init__(self, panel, game, pos, dim=(400, 60)): #dim = Dimensions.
         # i stands for inside.
         self.iButton = Button("Play", pos, panel, dim);
-        self.game = game;
-
+        self.game = game; #Game instance.
+    
+    #Function called when button is clicked.
     def action(self):
         self.game.reset();
 
-
+#Done button, found when setting a new highscrore
 class DoneButton:
     def __init__(self, panel):
         # i stands for inside.
         self.iButton = Button("Done", (width/2-250, 500), panel, (500, 65));
         self.panel = panel;
 
+    #Function called when button is clicked.
     def action(self):
         self.panel.finish();
 
 
-
+#Menu button class, sends user to the main menu.
 class MenuButton:
     def __init__(self, panel, game, pos, dim=(400, 60)):
         # i stands for inside.
         self.iButton = Button("Main Menu", pos, panel, dim);
         self.game = game;
 
+    #Function called when button is clicked.
     def action(self):
         self.game.goToMainMenu();
 
-
+#Leaderboard button class sends player to leaderboard.
 class LeaderboardButton:
     def __init__(self, panel, game, pos, dim=(400, 60)):
         # i stands for inside.
         self.iButton = Button("Leaderboard", pos, panel, dim);
         self.game = game;
 
+    #Function called when button is clicked.
     def action(self):
         self.game.showLeaderboards();
 
 
+#Reset button class, resets the game when pressed.
 class ResetButton:
     def __init__(self, panel, game):
         # i stands for inside.
         self.iButton = Button("Retry", (width/2-250, 600), panel, (500, 65));
         self.game = game;
 
+    #Function called when button is clicked.
     def action(self):
         self.game.reset();
 
