@@ -34,7 +34,7 @@ pygame.init();
 width = 1200;
 height = 750;
 
-FPS = 30; #Frames per second
+FPS = 60; #Frames per second
 running = True;
 SAVEPATH = "res/scores.txt"; #Stores the path to the saves file.
 
@@ -189,8 +189,8 @@ class Game:
 
         added = False;
         count = 0;
-        for score in self.highscores:
-            if(score.score > score):
+        for hs in self.highscores:
+            if(hs.score > score):
                 self.highscores.insert(count, hs);
                 added = True;
                 break;
