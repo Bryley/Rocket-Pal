@@ -11,4 +11,4 @@ setup(
                            "include_files":["res/"],
                            "includes":["modules.GameObject", "modules.GUI", "modules.TextBox"]
                            }},
-    executables = [Executable("RocketPal.py")])
+    executables = [Executable("RocketPal.py", base = "Win32GUI")])

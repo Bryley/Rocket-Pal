@@ -185,20 +185,20 @@ class Game:
         if(score == None):
             score = self.score;
 
-        hs = Highscore(name, score);
+        highscore = Highscore(name, score);
 
-        added = False;
+        added = False; #If the score was added.
         count = 0;
         for hs in self.highscores:
             if(hs.score > score):
-                self.highscores.insert(count, hs);
+                self.highscores.insert(count, highscore);
                 added = True;
                 break;
 
             count += 1;
 
         if(added == False):
-            self.highscores.append(hs);
+            self.highscores.append(highscore);
 
 
     def updatePlanet(self, pos):
@@ -336,5 +336,3 @@ while(running):
 game.save();
 #Pygame quits.
 pygame.quit();
-#Python quits.
-quit();
